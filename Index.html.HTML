@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Koushik Nutrition Tracker — Version 1</title>
+<style>
+  :root{
+    --bg1:#e6fbff; --bg2:#e8f7ff;
+    --card:#ffffff; --muted:#6b7b86;
+    --accent:#0ea5a4; --accent-dark:#028f8d;
+    --glass: rgba(255,255,255,0.6);
+    --success:#10b981;
+    --shadow: 0 6px 18px rgba(6,22,33,0.08);
+    --radius:14px;
+    --danger:#ef4444;
+  }
+  html,body{height:100%;margin:0;}
+  body{
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#062e33;
+    display:flex; justify-content:center; padding:28px;
+  }
+  .app{ width:100%; max-width:1080px; }
+  header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+  .brand{ display:flex; gap:12px; align-items:center; }
+  .logo{ height:56px; width:56px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg, rgba(14,165,164,0.95), rgba(2,143,141,0.95)); color:white; font-weight:700; box-shadow:var(--shadow); font-size:18px; }
+  h1{ margin:0; font-size:20px; color:#04232b; }
+  p.sub{ margin:0; font-size:12px; color:var(--muted); }
+
+  .grid{ display:grid; grid-template-columns: 1fr 380px; gap:18px; align-items:start; }
+  @media (max-width:980px){ .grid{ grid-template-columns: 1fr; } }
+
+  .card{ background:var(--card); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+  .sectionTitle{ font-size:15px; color:#08303b; margin-bottom:8px; }
+
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  label{ font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center; }
+  input[type="number"], input[type="text"], select{
+    padding:10px 12px; border-radius:10px; border:1px solid #e6eef2; outline:none; font-size:14px; background:transparent;
+  }
+  input[type="number"]{ width:120px; }
+  .btn{ background:var(--accent); color:white; border:none; padding:9px 12px; border-radius:10px; cursor:pointer; box-shadow:0 6px 14px rgba(2,143,141,0.12); }
+  .btn.ghost{ background:transparent; color:var(--accent-dark); border:1px solid rgba(2,143,141,0.12); box-shadow:none; }
+  .btn.danger{ background:var(--danger); box-shadow:none; }
+
+  .tracker{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .stat{ background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.98)); padding:10px; border-radius:12px; min-width:110px; text-align:center; box-shadow: 0 6px 18px rgba(6,22,33,0.04); }
+  .stat h3{ margin:0; font-size:18px; } .stat p{ margin:6px 0 0; font-size:12px; color:var(--muted); }
+
+  table{ width:100%; border-collapse:collapse; margin-top:12px; font-size:14px; }
+  thead th{ font-size:13px; color:var(--muted); text-align:center; padding:8px; }
+  td{ padding:8px; border-bottom:1px solid #f2f6f8; text-align:center; color:#08303b; }
+
+  /* suggestions */
+  #suggestions{ border-radius:8px; margin-top:6px; background:transparent; max-height:160px; overflow:auto; border:1px solid transparent; }
+  #suggestions div{ padding:8px 10px; cursor:pointer; color:#073038; }
+  #suggestions div:hover{ background:#f1fbfb; }
+
+  /* Today's meals grouped */
+  .mealsGroup{ margin-top:10px; display:flex; gap:12px; flex-direction:column; }
+  .mealBucket{ background:linear-gradient(180deg, #ffffff, #fbffff); border-radius:10px; padding:10px; }
+  .mealBucket h4{ margin:0 0 6px 0; font-size:14px; color:#073038; }
+  .mealRow{ display:flex; gap:8px; align-items:center; justify-content:space-between; padding:8px 6px; border-radius:8px; }
+  .mealRow + .mealRow{ margin-top:6px; }
+
+  .smallBtn{ padding:6px 8px; border-radius:8px; font-size:13px; border: none; cursor: pointer; }
+  .smallBtn.ghost{ background:transparent; color:var(--accent-dark); border:1px solid rgba(2,143,141,0.08); }
+  .smallBtn.warn{ background:#ffd8d8; color:var(--danger); }
+
+  /* history */
+  .historyList{ display:flex; flex-direction:column; gap:12px; margin-top:8px; max-height:680px; overflow:auto; }
+  .dayCard{ border-radius:12px; padding:12px; background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.98)); box-shadow:var(--shadow); cursor:pointer; }
+  .dayHeader{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .dayTitle{ font-weight:700; color:#062e33; }
+  .dayTotals{ font-size:13px; color:var(--muted); display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+  .expandArea{ margin-top:10px; border-top:1px dashed #eef6f7; padding-top:10px; display:none; }
+
+  .progressBar{ height:8px; background:#e8fbfb; border-radius:999px; overflow:hidden; width:100%; margin-top:6px; }
+  .progressVal{ height:100%; background: linear-gradient(90deg,var(--accent), var(--accent-dark)); width:0%; }
+
+  .meta{ font-size:12px; color:var(--muted); }
+
+  footer{ margin-top:18px; text-align:center; color:var(--muted); font-size:13px; }
+
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">KN</div>
+        <div>
+          <h1>Koushik Nutrition Tracker — Version 1</h1>
+          <p class="sub">Local tracker (your device). Indian & South Indian foods built-in.</p>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div class="meta">Today: <strong id="todayLabel"></strong></div>
+        <div style="margin-top:8px;"><button class="btn ghost" onclick="exportCSV()">Export CSV</button></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT (main) -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <!-- Targets -->
+        <div class="card">
+          <div class="sectionTitle">Set Your Daily Targets</div>
+          <div class="row" style="margin-top:6px;">
+            <label>Calories <input id="targetCalories" type="number" value="2000"></label>
+            <label>Protein(g) <input id="targetProtein" type="number" value="150"></label>
+            <label>Fat(g) <input id="targetFat" type="number" value="70"></label>
+            <label>Carbs(g) <input id="targetCarbs" type="number" value="250"></label>
+            <label>Fiber(g) <input id="targetFiber" type="number" value="30"></label>
+            <button class="btn" onclick="saveTargets()">Save</button>
+          </div>
+        </div>
+
+        <!-- Today's Progress -->
+        <div class="card">
+          <div class="sectionTitle">Today's Target Progress</div>
+
+          <div style="display:flex;gap:12px;flex-direction:column;">
+            <!-- Each progress block -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:var(--muted)">Calories</div>
+                <div style="font-weight:700" id="prog_cal_text">0 / 0</div>
+              </div>
+              <div class="progressBar"><div id="prog_cal" class="progressVal" style="width:0%"></div></div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:var(--muted)">Protein (g)</div>
+                <div style="font-weight:700" id="prog_pro_text">0 / 0</div>
+              </div>
+              <div class="progressBar"><div id="prog_pro" class="progressVal" style="width:0%"></div></div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:var(--muted)">Fat (g)</div>
+                <div style="font-weight:700" id="prog_fat_text">0 / 0</div>
+              </div>
+              <div class="progressBar"><div id="prog_fat" class="progressVal" style="width:0%"></div></div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:var(--muted)">Carbs (g)</div>
+                <div style="font-weight:700" id="prog_car_text">0 / 0</div>
+              </div>
+              <div class="progressBar"><div id="prog_car" class="progressVal" style="width:0%"></div></div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:13px;color:var(--muted)">Fiber (g)</div>
+                <div style="font-weight:700" id="prog_fib_text">0 / 0</div>
+              </div>
+              <div class="progressBar"><div id="prog_fib" class="progressVal" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Meal -->
+        <div class="card">
+          <div class="sectionTitle">Add Meal</div>
+          <div class="row" style="margin-top:6px; align-items:center;">
+            <label>Meal
+              <select id="mealType">
+                <option>Breakfast</option>
+                <option>Lunch</option>
+                <option>Snacks</option>
+                <option>Dinner</option>
+              </select>
+            </label>
+            <label style="flex:1">Food
+              <input id="foodSearch" type="text" placeholder="Type food name — pick from suggestions">
+            </label>
+            <label>Qty
+              <input id="foodQty" type="number" value="1" step="0.1" min="0.1">
+            </label>
+            <button class="btn" onclick="addMealFromSearch()">Add</button>
+          </div>
+          <div id="suggestions"></div>
+
+          <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+            <div id="selectedUnitInfo">Select a food to see unit & grams info.</div>
+            <div id="selectedMacros" style="margin-top:6px; display:none;">
+              <strong>Per unit:</strong> <span id="unitLabel"></span> —
+              <span id="macroLabel"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Meals (grouped) -->
+        <div class="card">
+          <div class="sectionTitle">Today's Meals</div>
+          <div class="mealsGroup" id="mealsGroup">
+            <!-- Groups will render here: Breakfast, Lunch, Snacks, Dinner -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT (history) -->
+      <aside>
+        <div class="card" style="width:340px;">
+          <div class="sectionTitle">History (Day-wise)</div>
+          <div id="historyContainer" class="historyList"></div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      Built with ♥︎ — Version 1 — data stays on your device (localStorage).
+    </footer>
+  </div>
+
+<script>
+/* ---------------- Food DB (with grams per unit) ----------------
+  gramsPerUnit is approximate standard weight for 1 unit (used for display),
+  macros are per unit (e.g., per piece or per 100g as described in unit string).
+  Expand this later as needed.
+*/
+const foodDB = [
+  { name:"Idli", unit:"piece", gramsPerUnit:50, calories:39, protein:1.3, fat:0.2, carbs:7.7, fiber:0.3 },
+  { name:"Dosa", unit:"piece", gramsPerUnit:100, calories:133, protein:3, fat:3, carbs:23, fiber:1 },
+  { name:"Chapati", unit:"piece", gramsPerUnit:40, calories:104, protein:3, fat:0.4, carbs:15, fiber:2 },
+  { name:"Rice", unit:"cup", gramsPerUnit:158, calories:200, protein:4, fat:0.4, carbs:44, fiber:0 },
+  { name:"Dal", unit:"cup", gramsPerUnit:200, calories:230, protein:12, fat:1, carbs:30, fiber:6 },
+  { name:"Paneer", unit:"100g", gramsPerUnit:100, calories:265, protein:18, fat:20, carbs:6, fiber:0 },
+  { name:"Banana", unit:"piece", gramsPerUnit:118, calories:105, protein:1.3, fat:0.3, carbs:27, fiber:3 },
+  { name:"Pesarattu (Andhra)", unit:"piece", gramsPerUnit:120, calories:180, protein:6, fat:3, carbs:30, fiber:3 },
+  { name:"Gutti Vankaya Curry (Telangana)", unit:"1 cup", gramsPerUnit:200, calories:150, protein:4, fat:10, carbs:10, fiber:4 },
+  { name:"Sambar", unit:"1 cup", gramsPerUnit:200, calories:120, protein:5, fat:3, carbs:20, fiber:6 },
+  { name:"Upma", unit:"1 cup", gramsPerUnit:200, calories:150, protein:4, fat:4, carbs:28, fiber:2 },
+  { name:"Curd", unit:"100g", gramsPerUnit:100, calories:61, protein:3.5, fat:3.3, carbs:4.7, fiber:0 },
+  { name:"Pongal", unit:"1 cup", gramsPerUnit:200, calories:200, protein:5, fat:6, carbs:35, fiber:2 },
+  { name:"Vada", unit:"piece", gramsPerUnit:60, calories:150, protein:3, fat:9, carbs:15, fiber:1 },
+  { name:"Rasam", unit:"1 cup", gramsPerUnit:200, calories:35, protein:1, fat:0.5, carbs:6, fiber:1 }
+];
+
+/* ---------------- Utilities ---------------- */
+function getTodayKey(){
+  const today = new Date();
+  return "meals_" + today.toISOString().split("T")[0];
+}
+function formatDateKey(key){ return key.replace("meals_",""); }
+function humanDate(iso){ try{ const d=new Date(iso); return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});}catch(e){return iso;} }
+function num(v){ return Math.round((v + Number.EPSILON) * 10) / 10; }
+function roundStr(v){ return (Math.round((v + Number.EPSILON) * 10) / 10).toString(); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- State ---------------- */
+let todayKey = getTodayKey();
+let todayMeals = JSON.parse(localStorage.getItem(todayKey)) || [];
+let savedTargets = JSON.parse(localStorage.getItem("dailyTargets")) || null;
+
+/* Initialize UI with today's label and targets */
+document.getElementById("todayLabel").textContent = humanDate(todayKey.replace("meals_",""));
+if(savedTargets){
+  document.getElementById("targetCalories").value = savedTargets.calories || 2000;
+  document.getElementById("targetProtein").value = savedTargets.protein || 150;
+  document.getElementById("targetFat").value = savedTargets.fat || 70;
+  document.getElementById("targetCarbs").value = savedTargets.carbs || 250;
+  document.getElementById("targetFiber").value = savedTargets.fiber || 30;
+}
+
+/* ---------------- Save Targets ---------------- */
+function saveTargets(){
+  const targets = {
+    calories: Number(document.getElementById("targetCalories").value || 0),
+    protein: Number(document.getElementById("targetProtein").value || 0),
+    fat: Number(document.getElementById("targetFat").value || 0),
+    carbs: Number(document.getElementById("targetCarbs").value || 0),
+    fiber: Number(document.getElementById("targetFiber").value || 0)
+  };
+  localStorage.setItem("dailyTargets", JSON.stringify(targets));
+  savedTargets = targets;
+  renderProgress(); // update progress bars
+  renderHistory();
+  alert("Targets saved locally.");
+}
+
+/* ---------------- Search suggestions & unit info ---------------- */
+const foodSearch = document.getElementById("foodSearch");
+const suggestionsDiv = document.getElementById("suggestions");
+const selectedUnitInfo = document.getElementById("selectedUnitInfo");
+const selectedMacros = document.getElementById("selectedMacros");
+const unitLabel = document.getElementById("unitLabel");
+const macroLabel = document.getElementById("macroLabel");
+
+foodSearch.addEventListener("input", () => {
+  const q = foodSearch.value.trim().toLowerCase();
+  suggestionsDiv.innerHTML = "";
+  selectedUnitInfo.textContent = "Select a food to see unit & grams info.";
+  selectedMacros.style.display = "none";
+  if(!q) return;
+  const matches = foodDB.filter(f => f.name.toLowerCase().includes(q)).slice(0,12);
+  suggestionsDiv.style.borderColor = matches.length ? "#e6eef2" : "transparent";
+  matches.forEach(f => {
+    const d = document.createElement("div");
+    d.textContent = `${f.name} — ${f.unit} (${f.gramsPerUnit}g per unit)`;
+    d.onclick = () => { chooseFoodFromSuggestion(f); };
+    suggestionsDiv.appendChild(d);
+  });
+});
+
+function chooseFoodFromSuggestion(foodObj){
+  foodSearch.value = foodObj.name;
+  suggestionsDiv.innerHTML = "";
+  selectedUnitInfo.textContent = `${foodObj.name}: 1 ${foodObj.unit} ≈ ${foodObj.gramsPerUnit} g`;
+  selectedMacros.style.display = "block";
+  unitLabel.textContent = `1 ${foodObj.unit} (${foodObj.gramsPerUnit} g)`;
+  macroLabel.textContent = `${foodObj.calories} kcal · P ${foodObj.protein}g · F ${foodObj.fat}g · C ${foodObj.carbs}g · Fib ${foodObj.fiber}g`;
+}
+
+/* ---------------- Add Meal ---------------- */
+function addMealFromSearch(){
+  const name = foodSearch.value.trim();
+  const qty = Number(document.getElementById("foodQty").value) || 0;
+  const mealType = document.getElementById("mealType").value;
+  if(!name || qty <= 0){ alert("Please select a food and a valid quantity."); return; }
+  const item = foodDB.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if(!item){ alert("Food not found. Choose from suggestions or type exact name."); return; }
+
+  const entry = {
+    id: 'm_' + Date.now() + '_' + Math.floor(Math.random()*9999),
+    mealType,
+    food: item.name,
+    unit: item.unit,
+    gramsPerUnit: item.gramsPerUnit,
+    qty,
+    calories: num(item.calories * qty),
+    protein: num(item.protein * qty),
+    fat: num(item.fat * qty),
+    carbs: num(item.carbs * qty),
+    fiber: num(item.fiber * qty),
+    createdAt: new Date().toISOString()
+  };
+
+  todayMeals.push(entry);
+  saveToday();
+  // clear input
+  foodSearch.value = ""; document.getElementById("foodQty").value = 1;
+  selectedUnitInfo.textContent = "Select a food to see unit & grams info.";
+  selectedMacros.style.display = "none";
+  renderMealsGroup();
+  renderProgress();
+}
+
+/* ---------------- Save & Load Today ---------------- */
+function saveToday(){
+  localStorage.setItem(todayKey, JSON.stringify(todayMeals));
+  renderHistory();
+}
+
+/* ---------------- Render Today's Meals grouped ---------------- */
+function renderMealsGroup(){
+  const container = document.getElementById("mealsGroup");
+  container.innerHTML = "";
+  const groups = ["Breakfast","Morning Snack","Lunch","Evening Snacks","Dinner"];
+  groups.forEach(g => {
+    const bucketMeals = todayMeals.filter(m => m.mealType === g);
+    const bucket = document.createElement("div");
+    bucket.className = "mealBucket";
+    bucket.innerHTML = `<h4>${g} <span style="font-size:12px;color:var(--muted);">(${bucketMeals.length})</span></h4>`;
+    if(bucketMeals.length === 0){
+      bucket.innerHTML += `<div style="font-size:13px;color:var(--muted)">No items</div>`;
+    } else {
+      bucketMeals.forEach(m => {
+        const row = document.createElement("div");
+        row.className = "mealRow";
+        row.innerHTML = `
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div style="font-weight:600">${escapeHtml(m.food)}</div>
+            <div style="font-size:13px;color:var(--muted)">${m.qty} ${escapeHtml(m.unit)} ≈ ${num(m.qty * m.gramsPerUnit)} g</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <div class="meta">Cal ${num(m.calories)}</div>
+            <div class="meta">P ${num(m.protein)}</div>
+            <div class="meta">F ${num(m.fat)}</div>
+            <div class="meta">C ${num(m.carbs)}</div>
+            <div class="meta">Fib ${num(m.fiber)}</div>
+            <button title="Edit" class="smallBtn ghost" onclick="editMeal('${m.id}', event)">Edit</button>
+            <button title="Delete" class="smallBtn warn" onclick="deleteMeal('${m.id}', event)">Delete</button>
+          </div>`;
+        bucket.appendChild(row);
+      });
+    }
+    container.appendChild(bucket);
+  });
+}
+
+/* ---------------- Edit & Delete ---------------- */
+function editMeal(id, evt){
+  evt.stopPropagation();
+  const idx = todayMeals.findIndex(x => x.id === id);
+  if(idx === -1) return;
+  const m = todayMeals[idx];
+  // populate fields so user can update then hit Add (we'll change Add to Save for edit)
+  document.getElementById("mealType").value = m.mealType;
+  document.getElementById("foodSearch").value = m.food;
+  document.getElementById("foodQty").value = m.qty;
+  // store edit id in a temporary place
+  window.currentEditId = id;
+  // change add button behavior & label
+  const addBtn = document.querySelector('button.btn:not(.ghost)');
+  addBtn.textContent = "Save";
+  addBtn.onclick = () => saveEdit();
+  // show unit info
+  selectedUnitInfo.textContent = `${m.food}: 1 ${m.unit} ≈ ${m.gramsPerUnit} g`;
+  selectedMacros.style.display = "block";
+  unitLabel.textContent = `1 ${m.unit} (${m.gramsPerUnit} g)`;
+  macroLabel.textContent = `per unit: ${Math.round(m.calories/m.qty)} kcal · P ${Math.round(m.protein/m.qty)}g · F ${Math.round(m.fat/m.qty)}g · C ${Math.round(m.carbs/m.qty)}g · Fib ${Math.round(m.fiber/m.qty)}g`;
+}
+function saveEdit(){
+  const id = window.currentEditId;
+  if(!id) return;
+  const idx = todayMeals.findIndex(x => x.id === id);
+  if(idx === -1) return;
+  const name = foodSearch.value.trim();
+  const qty = Number(document.getElementById("foodQty").value) || 0;
+  const mealType = document.getElementById("mealType").value;
+  const item = foodDB.find(x => x.name.toLowerCase() === name.toLowerCase());
+  if(!item){ alert("Food not found from DB — choose from suggestions."); return; }
+  const updated = {
+    ...todayMeals[idx],
+    mealType,
+    food: item.name,
+    unit: item.unit,
+    gramsPerUnit: item.gramsPerUnit,
+    qty,
+    calories: num(item.calories * qty),
+    protein: num(item.protein * qty),
+    fat: num(item.fat * qty),
+    carbs: num(item.carbs * qty),
+    fiber: num(item.fiber * qty),
+    createdAt: new Date().toISOString()
+  };
+  todayMeals[idx] = updated;
+  // reset add button
+  const addBtn = document.querySelector('button.btn:not(.ghost)');
+  addBtn.textContent = "Add";
+  addBtn.onclick = addMealFromSearch;
+  window.currentEditId = null;
+  // clear inputs
+  foodSearch.value = ""; document.getElementById("foodQty").value = 1;
+  selectedUnitInfo.textContent = "Select a food to see unit & grams info.";
+  selectedMacros.style.display = "none";
+  saveToday();
+  renderMealsGroup();
+  renderProgress();
+}
+function deleteMeal(id, evt){
+  evt.stopPropagation();
+  if(!confirm("Delete this meal entry?")) return;
+  todayMeals = todayMeals.filter(x => x.id !== id);
+  saveToday();
+  renderMealsGroup();
+  renderProgress();
+}
+
+/* ---------------- Render Progress bars (today) ---------------- */
+function computeTotals(meals){
+  const t = { calories:0, protein:0, fat:0, carbs:0, fiber:0 };
+  (meals || []).forEach(m => {
+    t.calories += Number(m.calories || 0);
+    t.protein += Number(m.protein || 0);
+    t.fat += Number(m.fat || 0);
+    t.carbs += Number(m.carbs || 0);
+    t.fiber += Number(m.fiber || 0);
+  });
+  // round
+  return { calories: num(t.calories), protein: num(t.protein), fat: num(t.fat), carbs: num(t.carbs), fiber: num(t.fiber) };
+}
+
+function renderProgress(){
+  // get targets
+  const targets = savedTargets || JSON.parse(localStorage.getItem("dailyTargets")) || {
+    calories: Number(document.getElementById("targetCalories").value || 2000),
+    protein: Number(document.getElementById("targetProtein").value || 150),
+    fat: Number(document.getElementById("targetFat").value || 70),
+    carbs: Number(document.getElementById("targetCarbs").value || 250),
+    fiber: Number(document.getElementById("targetFiber").value || 30)
+  };
+  savedTargets = targets;
+
+  const totals = computeTotals(todayMeals);
+
+  // helper to set bar
+  function setBar(idText, idBar, value, target){
+    document.getElementById(idText).textContent = `${num(value)} / ${num(target)}`;
+    const pct = target > 0 ? Math.round((value/target)*100) : 0;
+    document.getElementById(idBar).style.width = Math.min(150, Math.max(0, pct)) + "%";
+    // color change if over 100% (slightly darker)
+    document.getElementById(idBar).style.background = pct > 100 ? "linear-gradient(90deg,#f97316,#ef4444)" : "linear-gradient(90deg,var(--accent),var(--accent-dark))";
+  }
+  setBar("prog_cal_text","prog_cal", totals.calories, targets.calories);
+  setBar("prog_pro_text","prog_pro", totals.protein, targets.protein);
+  setBar("prog_fat_text","prog_fat", totals.fat, targets.fat);
+  setBar("prog_car_text","prog_car", totals.carbs, targets.carbs);
+  setBar("prog_fib_text","prog_fib", totals.fiber, targets.fiber);
+}
+
+/* ---------------- History (day-wise) ---------------- */
+function getAllDaysKeys(){ return Object.keys(localStorage).filter(k => k.startsWith("meals_")).sort((a,b)=> b.localeCompare(a)); }
+
+function renderHistory(){
+  const container = document.getElementById("historyContainer");
+  container.innerHTML = "";
+  const keys = getAllDaysKeys();
+  const targets = savedTargets || JSON.parse(localStorage.getItem("dailyTargets")) || { calories:2000, protein:150, fat:70, carbs:250, fiber:30 };
+
+  if(keys.length === 0){
+    container.innerHTML = `<div style="color:var(--muted); font-size:13px;">No history yet — add meals to save days.</div>`;
+    return;
+  }
+  keys.forEach(key => {
+    const meals = JSON.parse(localStorage.getItem(key)) || [];
+    const totals = computeTotals(meals);
+    const dayDiv = document.createElement("div");
+    dayDiv.className = "dayCard";
+    dayDiv.innerHTML = `
+      <div class="dayHeader">
+        <div>
+          <div class="dayTitle">${humanDate(formatDateKey(key))}</div>
+          <div class="dayTotals">
+            <div>Cal: <strong>${num(totals.calories)}</strong></div>
+            <div>P: <strong>${num(totals.protein)}</strong></div>
+            <div>F: <strong>${num(totals.fat)}</strong></div>
+            <div>C: <strong>${num(totals.carbs)}</strong></div>
+            <div>Fib: <strong>${num(totals.fiber)}</strong></div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:var(--muted)">Items: ${meals.length}</div>
+          <div style="margin-top:8px;">
+            <button class="btn ghost" onclick="loadDay('${key}', event)">Load</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <div style="font-size:12px;color:var(--muted); margin-bottom:6px;">Calories progress</div>
+        <div class="progressBar"><div class="progressVal" style="width:${Math.min(150, Math.round((totals.calories/Math.max(1, targets.calories))*100))}%"></div></div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <div style="flex:1"><div style="font-size:12px;color:var(--muted)">Protein</div><div class="progressBar"><div class="progressVal" style="width:${Math.min(150, Math.round((totals.protein/Math.max(1, targets.protein))*100))}%"></div></div></div>
+          <div style="flex:1"><div style="font-size:12px;color:var(--muted)">Fat</div><div class="progressBar"><div class="progressVal" style="width:${Math.min(150, Math.round((totals.fat/Math.max(1, targets.fat))*100))}%"></div></div></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <div style="flex:1"><div style="font-size:12px;color:var(--muted)">Carbs</div><div class="progressBar"><div class="progressVal" style="width:${Math.min(150, Math.round((totals.carbs/Math.max(1, targets.carbs))*100))}%"></div></div></div>
+          <div style="flex:1"><div style="font-size:12px;color:var(--muted)">Fiber</div><div class="progressBar"><div class="progressVal" style="width:${Math.min(150, Math.round((totals.fiber/Math.max(1, targets.fiber))*100))}%"></div></div></div>
+        </div>
+      </div>
+
+      <div class="expandArea">
+        <div style="font-size:13px;color:var(--muted); margin-bottom:8px;">Meals</div>
+        <table style="width:100%; font-size:13px;">
+          <thead><tr><th>Meal</th><th style="text-align:left">Food</th><th>Qty</th><th>Grams</th><th>Cal</th></tr></thead>
+          <tbody>
+            ${meals.map(m => `<tr><td>${escapeHtml(m.mealType)}</td><td style="text-align:left;padding-left:6px">${escapeHtml(m.food)}</td><td style="text-align:center">${m.qty} ${escapeHtml(m.unit)}</td><td style="text-align:center">${num(m.qty * m.gramsPerUnit)}</td><td style="text-align:center">${num(m.calories)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+          <button class="btn ghost" onclick="deleteDay('${key}', event)">Delete Day</button>
+        </div>
+      </div>
+    `;
+    // toggle expand
+    dayDiv.addEventListener("click", function(e){
+      if(e.target.tagName.toLowerCase()==='button' || e.target.closest('button')) return;
+      const area = this.querySelector('.expandArea');
+      area.style.display = area.style.display === 'block' ? 'none' : 'block';
+    });
+    container.appendChild(dayDiv);
+  });
+}
+
+/* ---------------- Load a day into main tracker ---------------- */
+function loadDay(key, evt){
+  if(evt) evt.stopPropagation();
+  const meals = JSON.parse(localStorage.getItem(key)) || [];
+  todayKey = key;
+  todayMeals = meals.slice();
+  document.getElementById("todayLabel").textContent = humanDate(formatDateKey(key));
+  renderMealsGroup();
+  renderProgress();
+  // scroll up for visibility
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+/* ---------------- Delete day ---------------- */
+function deleteDay(key, evt){
+  evt.stopPropagation();
+  if(!confirm("Delete all meals for " + formatDateKey(key) + "? This cannot be undone.")) return;
+  localStorage.removeItem(key);
+  // if current loaded day removed, reset to today
+  if(key === todayKey){
+    todayKey = getTodayKey();
+    todayMeals = JSON.parse(localStorage.getItem(todayKey)) || [];
+    document.getElementById("todayLabel").textContent = humanDate(todayKey.replace("meals_",""));
+    renderMealsGroup();
+    renderProgress();
+  }
+  renderHistory();
+}
+
+/* ---------------- Export CSV ---------------- */
+function exportCSV(){
+  const keys = getAllDaysKeys();
+  let rows = [['date','mealType','food','qty','unit','grams','calories','protein','fat','carbs','fiber']];
+  keys.forEach(k => {
+    const date = formatDateKey(k);
+    const meals = JSON.parse(localStorage.getItem(k)) || [];
+    meals.forEach(m => rows.push([date,m.mealType,m.food,m.qty,m.unit,num(m.qty*m.gramsPerUnit),m.calories,m.protein,m.fat,m.carbs,m.fiber]));
+  });
+  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'koushik_nutrition_history_v1.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ---------------- INIT ---------------- */
+function init(){
+  todayKey = getTodayKey();
+  todayMeals = JSON.parse(localStorage.getItem(todayKey)) || [];
+  document.getElementById("todayLabel").textContent = humanDate(todayKey.replace("meals_",""));
+  // ensure add button on load points to add
+  const addBtn = document.querySelector('button.btn:not(.ghost)');
+  addBtn.textContent = "Add";
+  addBtn.onclick = addMealFromSearch;
+  renderMealsGroup();
+  // load saved targets (if any) and compute progress & history
+  savedTargets = JSON.parse(localStorage.getItem("dailyTargets")) || null;
+  renderProgress();
+  renderHistory();
+}
+init();
+
+</script>
+</body>
+</html>
